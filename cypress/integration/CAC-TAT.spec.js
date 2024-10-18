@@ -6,7 +6,8 @@ describe("Central de Atendimento ao Cliente TAT", () => {
   });
 
   const longText = `Lorem ipsum dolor sit amet consectetur adipisicing elit. Ullam repellat similique incidunt quo voluptatem consequatur mollitia cum fuga temporibus quam velit, voluptate architecto amet sint possimus ipsum, sequi, minima maxime.`;
-
+  const THREE_SECONDS_IN_MS = 3000;
+  const longTextReapt = Cypress._.repeat('0123456789', 20);
   it("verifica o título da aplicação", () => {
     cy.title().should("eq", "Central de Atendimento ao Cliente TAT");
   });
@@ -22,22 +23,31 @@ describe("Central de Atendimento ao Cliente TAT", () => {
   });
 
   it('exibe mensagem de erro ao submeter o formulário com um email com formatação inválida', () => {
+    cy.clock()
+
     cy.get('#firstName').type('Renan');
     cy.get('#lastName').type('Jastro');
     cy.get('#email').type('jastro.gmail.com');
     cy.get('#open-text-area').type(longText);
     cy.contains("button", "Enviar").click();
-    cy.get('.error').should('be.visible')
 
-  } )
+    cy.get('.error').should('be.visible')
+    cy.tick(THREE_SECONDS_IN_MS)
+    cy.get('.error').should('not.be.visible')
+
+  })
 
   it("preenche os campos obrigatórios e envia o formulário", () => {
+  cy.clock()
+
     cy.get("#firstName").type("Renan", { delay: 0 });
     cy.get("#lastName").type("Jastro Pereira", { delay: 0 });
     cy.get("#email").type("jastro@gmail.com", { delay: 0 });
     cy.get("#open-text-area").type(longText, { delay: 0 });
     cy.contains("button", "Enviar").click();
     cy.get(".success").should("be.visible");
+    cy.tick(THREE_SECONDS_IN_MS)
+    cy.get(".success").should("not.be.visible");
   });
   
   it('seleciona um produto (YouTube) por seu texto', () => {
@@ -62,6 +72,7 @@ describe("Central de Atendimento ao Cliente TAT", () => {
     .should('have.value', 'feedback')
   })
   
+Cypress._.times(10, () => {
   it('marca cada tipo de atendimento', () => {
     cy.get('input[type=radio]')
     .should('have.length', 3)
@@ -70,6 +81,7 @@ describe("Central de Atendimento ao Cliente TAT", () => {
       cy.wrap($radio).should('be.checked')
     })
   })  
+})
   it('marca ambos checkboxes, depois desmarca o último', () => {
     cy.get('input[type="checkbox"]')
       .check()
@@ -84,6 +96,8 @@ describe("Central de Atendimento ao Cliente TAT", () => {
     .should('be.checked')
   })
   it('exibe mensagem de erro quando o telefone se torna obrigatório mas não é preenchido antes do envio do formulário', () => {
+    cy.clock()
+
     cy.get('#firstName').type('renan')
     cy.get('#lastName').type('jastro')
     cy.get('#email').type('jastro@gmail.com')
@@ -91,6 +105,8 @@ describe("Central de Atendimento ao Cliente TAT", () => {
     cy.get('#open-text-area').type(longText)
     cy.contains('button', 'Enviar').click()
     cy.get('.error').should('be.visible')
+    cy.tick(THREE_SECONDS_IN_MS)
+    cy.get('.error').should('not.be.visible')
   })
   it('seleciona um arquivo da pasta fixtures', () => {
     cy.get('#file-upload')
@@ -128,6 +144,43 @@ it('acessa a página da política de privacidade removendo o target e então cli
 
     cy.contains('Talking About Testing').should('be.visible')
 })
+it('exibe e esconde as mensagens de sucesso e erro usando o .invoke', () => {
+  cy.get('.success')
+    .should('not.be.visible')
+    .invoke('show')
+    .should('be.visible')
+    .and('contain', 'Mensagem enviada com sucesso.')
+    .invoke('hide')
+    .should('not.be.visible')
+  cy.get('.error')
+    .should('not.be.visible')
+    .invoke('show')
+    .should('be.visible')
+    .and('contain', 'Valide os campos obrigatórios!')
+    .invoke('hide')
+    .should('not.be.visible')
+})
 
+  it('preenche a area de texto usando o comando invoke', () => {
+      cy.get('#open-text-area')
+      .invoke('val', longTextReapt)
+      .should('have.value', longTextReapt)
+  })  
+  it('faz uma requisição HTTP', () => {
+    cy.request({
+      url: 'https://cac-tat.s3.eu-central-1.amazonaws.com/index.html',
+      method: 'GET',
+    }).then((response) => {
+      expect(response.status).to.eq(200);
+      expect(response.statusText).to.eq('OK');
+      expect(response.body).contain('CAC TAT');
+    });
+  });
+  it('Desafio (encontre o gato)', () => {
+    cy.get('#cat')
+    .should('not.be.visible')
+    .invoke('show')
+    .should('be.visible')
+  })
 
 });
